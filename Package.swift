@@ -9,7 +9,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "openinfo",
-            path: "Sources/openinfo"
+            path: "Sources/openinfo",
+            resources: [
+                .process("Resources")
+            ]
         )
     ]
 )
