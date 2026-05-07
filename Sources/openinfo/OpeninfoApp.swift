@@ -16,8 +16,8 @@ struct OpeninfoApp: App {
             MenuBarPopoverView()
                 .environment(vm)
         } label: {
-            if vm.games.isEmpty {
-                Image(systemName: "basketball.fill")
+            if !vm.hasAnyGames {
+                Image(systemName: vm.selectedLeague.sfSymbol)
                     .symbolRenderingMode(.hierarchical)
             } else {
                 Text(vm.menuBarTitle)

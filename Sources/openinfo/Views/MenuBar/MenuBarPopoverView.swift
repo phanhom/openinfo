@@ -7,17 +7,27 @@ struct MenuBarPopoverView: View {
         VStack(spacing: 0) {
 
             // ── Header Bar ─────────────────────────────────────────────────
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
 
-                // Title
-                Text("NBA")
-                    .font(.system(size: 12, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .tracking(1.5)
+                // Current league name + cycle button
+                HStack(spacing: 2) {
+                    Text(vm.selectedLeague.rawValue)
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .tracking(1.5)
+
+                    Button { vm.cycleLeague() } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .bold))
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(GhostButtonStyle())
+                }
 
                 Spacer()
 
-                // Pagination (only when multiple games)
+                // Pagination
                 if vm.hasMultipleGames {
                     HStack(spacing: 2) {
                         Text(vm.gameCountLabel)
@@ -36,23 +46,7 @@ struct MenuBarPopoverView: View {
                     }
                 }
 
-                // Refresh button
-                Button {
-                    Task { await vm.refresh() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11, weight: .medium))
-                        .frame(width: 22, height: 22)
-                        .contentShape(Rectangle())
-                        .rotationEffect(vm.isLoading ? .degrees(360) : .zero)
-                        .animation(
-                            vm.isLoading
-                                ? .linear(duration: 0.8).repeatForever(autoreverses: false)
-                                : .default,
-                            value: vm.isLoading
-                        )
-                }
-                .buttonStyle(GhostButtonStyle())
+                // League switch button (removed — now inline with league name)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)

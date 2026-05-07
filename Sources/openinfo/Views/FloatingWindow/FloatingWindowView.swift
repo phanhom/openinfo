@@ -20,6 +20,23 @@ struct FloatingWindowView: View {
                 }
 
                 Spacer()
+
+                // Current league + cycle button
+                HStack(spacing: 2) {
+                    Text(vm.selectedLeague.rawValue)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .tracking(0.8)
+
+                    Button { vm.cycleLeague() } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.4))
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
