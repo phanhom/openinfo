@@ -6,6 +6,9 @@ APP_BUNDLE := $(APP_NAME).app
 # SPM output path varies by platform — find the release binary dynamically
 BINARY := $(shell find .build -maxdepth 4 -path "*/release/$(APP_NAME)" -type f 2>/dev/null | head -1)
 
+# Try to derive version from the closest git tag
+GIT_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+
 .PHONY: build bundle zip install uninstall clean
 
 # ── 1. Build ───────────────────────────────────────────────────────────────
@@ -19,6 +22,8 @@ bundle: build
 	cp "$(BINARY)" "$(APP_BUNDLE)/Contents/MacOS/$(APP_NAME)"
 	# Copy bundled resources (SVG assets)
 	cp Sources/$(APP_NAME)/Resources/*.svg "$(APP_BUNDLE)/Contents/Resources/" 2>/dev/null || true
+	# Write version info
+	printf '%s' "$(GIT_TAG)" > "$(APP_BUNDLE)/Contents/Resources/installed-version.txt"
 	# Generate Info.plist
 	/usr/libexec/PlistBuddy -c "Save" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null
 	/usr/libexec/PlistBuddy -c "Add CFBundleExecutable             string $(APP_NAME)" "$(APP_BUNDLE)/Contents/Info.plist"
