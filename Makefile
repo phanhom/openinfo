@@ -9,7 +9,7 @@ BINARY := $(shell find .build -maxdepth 4 -path "*/release/$(APP_NAME)" -type f 
 # Try to derive version from the closest git tag
 GIT_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 
-.PHONY: build bundle zip install uninstall clean
+.PHONY: build bundle sign zip install uninstall clean
 
 # ── 1. Build ───────────────────────────────────────────────────────────────
 build:
@@ -37,14 +37,19 @@ bundle: build
 	/usr/libexec/PlistBuddy -c "Add LSMinimumSystemVersion        string 15.0" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add LSUIElement                   bool YES" "$(APP_BUNDLE)/Contents/Info.plist"
 
-# ── 3. Zip for release ──────────────────────────────────────────────────────
-zip: bundle
+# ── 3. Ad-hoc code sign ─────────────────────────────────────────────────────
+sign: bundle
+	codesign --force --deep --sign - "$(APP_BUNDLE)"
+	@echo "✅ Ad-hoc signed $(APP_BUNDLE)"
+
+# ── 4. Zip for release ──────────────────────────────────────────────────────
+zip: sign
 	rm -f "$(APP_BUNDLE).zip"
 	ditto -c -k --keepParent "$(APP_BUNDLE)" "$(APP_BUNDLE).zip"
 	@echo "✅ Created $(APP_BUNDLE).zip"
 
-# ── 4. Install to /Applications ────────────────────────────────────────────
-install: bundle
+# ── 5. Install to /Applications ────────────────────────────────────────────
+install: sign
 	@echo ""
 	@echo "==> Installing OpenInfo…"
 	cp -R "$(APP_BUNDLE)" /Applications/

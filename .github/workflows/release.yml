@@ -22,11 +22,8 @@ jobs:
       - name: Build Release
         run: swift build -c release --product openinfo
 
-      - name: Package .app
-        run: make bundle
-
-      - name: Zip .app
-        run: zip -r openinfo.app.zip openinfo.app
+      - name: Package & Sign .app
+        run: make zip
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
