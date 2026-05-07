@@ -2,6 +2,8 @@ import SwiftUI
 
 struct FloatingWindowView: View {
     @Environment(GamesViewModel.self) private var vm
+    @State private var chatVM = ChatViewModel()
+    @State private var showChat = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,7 +23,7 @@ struct FloatingWindowView: View {
 
                 Spacer()
 
-                // Current league + cycle button
+                // League name + cycle
                 HStack(spacing: 2) {
                     Text(vm.selectedLeague.rawValue)
                         .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -37,15 +39,25 @@ struct FloatingWindowView: View {
                     }
                     .buttonStyle(.plain)
                 }
+
+                // Chat toggle
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { showChat.toggle() }
+                } label: {
+                    Image(systemName: showChat ? "bubble.fill" : "bubble")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(showChat ? 0.7 : 0.35))
+                        .frame(width: 26, height: 26)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 12)
 
             // ── Divider ───────────────────────────────────────────────────
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 1)
+            divider
 
             // ── Games List ────────────────────────────────────────────────
             ScrollView(.vertical, showsIndicators: false) {
@@ -56,15 +68,23 @@ struct FloatingWindowView: View {
                 }
                 .padding(12)
             }
-            .frame(maxHeight: 580)
+            .frame(maxHeight: 360)
             .overlay {
                 if vm.games.isEmpty && !vm.isLoading {
                     emptyState
                 }
             }
+
+            // ── AI Chat (collapsible) ─────────────────────────────────────
+            if showChat {
+                divider
+                ChatView(vm: chatVM)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
         .frame(width: 324)
         .background(windowBackground)
+        .animation(.easeInOut(duration: 0.2), value: showChat)
         .onAppear { vm.startPolling() }
         .onDisappear { vm.stopPolling() }
     }
@@ -78,6 +98,12 @@ struct FloatingWindowView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
         }
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.07))
+            .frame(height: 1)
     }
 
     // MARK: - Empty State

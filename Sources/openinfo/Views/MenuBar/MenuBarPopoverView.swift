@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MenuBarPopoverView: View {
     @Environment(GamesViewModel.self) private var vm
+    @State private var chatVM = ChatViewModel()
+    @State private var showChat = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -9,7 +11,7 @@ struct MenuBarPopoverView: View {
             // ── Header Bar ─────────────────────────────────────────────────
             HStack(spacing: 0) {
 
-                // Current league name + cycle button
+                // League name + cycle button
                 HStack(spacing: 2) {
                     Text(vm.selectedLeague.rawValue)
                         .font(.system(size: 12, weight: .black, design: .rounded))
@@ -27,26 +29,14 @@ struct MenuBarPopoverView: View {
 
                 Spacer()
 
-                // Pagination
-                if vm.hasMultipleGames {
-                    HStack(spacing: 2) {
-                        Text(vm.gameCountLabel)
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.4))
-                            .monospacedDigit()
-                            .frame(minWidth: 28)
-
-                        Button { vm.nextGame() } label: {
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(width: 22, height: 22)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(GhostButtonStyle())
-                    }
+                // Chat toggle
+                Button { withAnimation(.easeInOut(duration: 0.2)) { showChat.toggle() } } label: {
+                    Image(systemName: showChat ? "bubble.fill" : "bubble")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 26, height: 26)
+                        .contentShape(Rectangle())
                 }
-
-                // League switch button (removed — now inline with league name)
+                .buttonStyle(GhostButtonStyle())
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -56,13 +46,18 @@ struct MenuBarPopoverView: View {
             // ── Game Card ─────────────────────────────────────────────────
             Group {
                 if let game = vm.currentMenuBarGame {
-                    GameCardView(game: game, logoSize: 46, compact: true)
-                        .padding(10)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .trailing)),
-                            removal:   .opacity.combined(with: .move(edge: .leading))
-                        ))
-                        .id(game.id)
+                    GameCardView(
+                        game: game,
+                        logoSize: 46,
+                        compact: true,
+                        onNext: vm.hasMultipleGames ? { vm.nextGame() } : nil
+                    )
+                    .padding(10)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal:   .opacity.combined(with: .move(edge: .leading))
+                    ))
+                    .id(game.id)
                 } else if vm.isLoading {
                     loadingPlaceholder
                 } else {
@@ -71,7 +66,14 @@ struct MenuBarPopoverView: View {
             }
             .animation(.easeInOut(duration: 0.2), value: vm.currentMenuBarGame?.id)
 
-            // ── Footer: error indicator ───────────────────────────────────
+            // ── AI Chat (collapsible) ─────────────────────────────────────
+            if showChat {
+                divider
+                ChatView(vm: chatVM)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
+            // ── Error ─────────────────────────────────────────────────────
             if let err = vm.errorMessage {
                 divider
                 HStack(spacing: 5) {

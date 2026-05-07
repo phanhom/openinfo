@@ -2,10 +2,12 @@ import SwiftUI
 
 /// Shared game card used in both the MenuBar Popover and the FloatingWindow.
 /// `compact` mode is used in the Popover (smaller logos, tighter spacing).
+/// `onNext` — if provided, shows a ▼ button below the status for cycling games.
 struct GameCardView: View {
     let game: NBAGame
     var logoSize: CGFloat = 48
     var compact: Bool = false
+    var onNext: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .center, spacing: compact ? 10 : 18) {
@@ -14,13 +16,25 @@ struct GameCardView: View {
             teamColumn(team: game.awayTeam)
 
             // ── Center: Score / Status ─────────────────────
-            VStack(spacing: compact ? 5 : 8) {
+            VStack(spacing: compact ? 4 : 6) {
                 if game.isLive || game.isFinal {
                     scoreRow
                         .fixedSize()
                 }
                 StatusIndicatorView(status: game.status)
                     .fixedSize()
+
+                // ▼ next game button (only when provided)
+                if let onNext {
+                    Button(action: onNext) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.3))
+                            .frame(width: 24, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .frame(minWidth: compact ? 110 : 130)
 
@@ -101,7 +115,6 @@ struct GameCardView: View {
 
     // MARK: - Helpers
 
-    /// Winning team score shown in white, losing in dimmed white.
     private func scoreColor(for team: TeamInfo, opponent: TeamInfo) -> Color {
         guard game.isFinal || game.isLive else { return .white }
         if team.score > opponent.score { return .white }
@@ -109,7 +122,6 @@ struct GameCardView: View {
         return .white
     }
 
-    /// Returns the last word of a team's displayName (e.g. "Knicks" from "New York Knicks").
     private func teamShortName(_ fullName: String) -> String {
         fullName.components(separatedBy: " ").last ?? fullName
     }

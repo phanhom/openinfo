@@ -30,8 +30,7 @@ struct OpeninfoApp: App {
         Window("NBA Scores", id: "floating") {
             FloatingWindowView()
                 .environment(vm)
-        }
-        .windowStyle(.plain)
+        }        .windowStyle(.plain)
         .windowResizability(.contentSize)
         .defaultPosition(.topTrailing)
     }
