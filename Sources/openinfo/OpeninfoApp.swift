@@ -16,8 +16,13 @@ struct OpeninfoApp: App {
             MenuBarPopoverView()
                 .environment(vm)
         } label: {
-            Text(vm.menuBarTitle)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+            if vm.games.isEmpty {
+                Image(systemName: "basketball.fill")
+                    .symbolRenderingMode(.hierarchical)
+            } else {
+                Text(vm.menuBarTitle)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+            }
         }
         .menuBarExtraStyle(.window)
 

@@ -8,7 +8,6 @@ struct FloatingWindowView: View {
 
             // ── Header ────────────────────────────────────────────────────
             HStack(spacing: 8) {
-                // Live indicator
                 HStack(spacing: 6) {
                     Circle()
                         .fill(vm.games.contains(where: { $0.isLive }) ? Color.green : Color.white.opacity(0.2))
@@ -21,21 +20,6 @@ struct FloatingWindowView: View {
                 }
 
                 Spacer()
-
-                if vm.isLoading {
-                    ProgressView()
-                        .controlSize(.mini)
-                        .tint(.white.opacity(0.4))
-                } else {
-                    Button {
-                        Task { await vm.refresh() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -68,15 +52,12 @@ struct FloatingWindowView: View {
         .onDisappear { vm.stopPolling() }
     }
 
-    // MARK: - Backgrounds
+    // MARK: - Background
 
     private var windowBackground: some View {
         ZStack {
-            // Solid black fill
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color.black)
-
-            // Subtle inner border
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
         }
@@ -85,10 +66,9 @@ struct FloatingWindowView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "basketball")
-                .font(.system(size: 28))
-                .foregroundStyle(.white.opacity(0.1))
+        VStack(spacing: 14) {
+            SVGView(name: "basketball", size: 72)
+                .frame(width: 72, height: 72)
             Text("No games today")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white.opacity(0.25))

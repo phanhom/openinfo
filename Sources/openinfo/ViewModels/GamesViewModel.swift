@@ -25,7 +25,7 @@ final class GamesViewModel {
     }
 
     var menuBarTitle: String {
-        currentMenuBarGame?.menuBarLabel ?? "NBA"
+        currentMenuBarGame?.menuBarLabel ?? ""
     }
 
     var hasMultipleGames: Bool {

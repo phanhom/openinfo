@@ -20,14 +20,6 @@ struct MenuBarPopoverView: View {
                 // Pagination (only when multiple games)
                 if vm.hasMultipleGames {
                     HStack(spacing: 2) {
-                        Button { vm.prevGame() } label: {
-                            Image(systemName: "chevron.up")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(width: 22, height: 22)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(GhostButtonStyle())
-
                         Text(vm.gameCountLabel)
                             .font(.system(size: 10, weight: .medium, design: .rounded))
                             .foregroundStyle(.white.opacity(0.4))
@@ -126,10 +118,9 @@ struct MenuBarPopoverView: View {
     }
 
     private var emptyPlaceholder: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "basketball")
-                .font(.system(size: 22))
-                .foregroundStyle(.white.opacity(0.15))
+        VStack(spacing: 12) {
+            SVGView(name: "basketball", size: 60)
+                .frame(width: 60, height: 60)
             Text("No games today")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.3))
