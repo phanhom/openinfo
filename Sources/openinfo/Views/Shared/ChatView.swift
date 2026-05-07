@@ -1,136 +1,79 @@
 import SwiftUI
 
+// MARK: - Chat View
+
 struct ChatView: View {
     @Bindable var vm: ChatViewModel
     @FocusState private var inputFocused: Bool
-    @State private var scrollID: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
 
             // ── Header ────────────────────────────────────────────────────
             HStack {
-                Label("AI", systemImage: "sparkle")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
-                    .tracking(0.8)
+                HStack(spacing: 5) {
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.35))
+                    Text("AI")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .tracking(0.8)
+                }
 
                 Spacer()
 
                 if !vm.messages.isEmpty {
                     Button { vm.clear() } label: {
                         Text("clear")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.25))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.2))
                     }
                     .buttonStyle(.plain)
                     .transition(.opacity)
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-            .animation(.easeInOut(duration: 0.2), value: vm.messages.isEmpty)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
+            .animation(.easeInOut(duration: 0.15), value: vm.messages.isEmpty)
 
             // ── Messages ──────────────────────────────────────────────────
-            if !vm.messages.isEmpty {
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 8) {
-                            ForEach(vm.messages) { msg in
-                                MessageBubble(message: msg)
-                                    .id(msg.id)
-                            }
-                            if vm.isThinking {
-                                ThinkingIndicator()
-                                    .id("thinking")
-                            }
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVStack(spacing: 2) {
+                        ForEach(vm.messages) { msg in
+                            MessageBubble(message: msg)
+                                .id(msg.id)
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 8)
-                    }
-                    .frame(maxHeight: 220)
-                    .onChange(of: vm.messages.count) { _, _ in
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            if let lastID = vm.messages.last?.id {
-                                proxy.scrollTo(lastID, anchor: .bottom)
-                            }
+                        // Three-dot thinking indicator
+                        if vm.isThinking {
+                            ThinkingRow()
+                                .id("thinking")
+                                .transition(.opacity)
                         }
+                        Color.clear.frame(height: 1).id("bottom")
                     }
-                    .onChange(of: vm.isThinking) { _, thinking in
-                        if thinking {
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                proxy.scrollTo("thinking", anchor: .bottom)
-                            }
-                        }
-                    }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 4)
                 }
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .frame(height: 200)
+                .onChange(of: vm.messages.count) { _, _ in scrollToBottom(proxy) }
+                .onChange(of: vm.isThinking) { _, v in if v { scrollToBottom(proxy) } }
+                .onChange(of: vm.messages.last?.content) { _, _ in scrollToBottom(proxy) }
+                .onAppear { scrollToBottom(proxy) }
             }
 
-            // ── Input ─────────────────────────────────────────────────────
-            inputBar
+            // ── Input bar ─────────────────────────────────────────────────
+            InputBar(vm: vm, focused: $inputFocused)
         }
+        .onAppear { inputFocused = true }
     }
 
-    // MARK: - Input Bar
-
-    private var inputBar: some View {
-        HStack(spacing: 0) {
-            TextField("Ask anything...", text: $vm.inputText, axis: .vertical)
-                .font(.system(size: 12))
-                .foregroundStyle(.white)
-                .tint(.white.opacity(0.6))
-                .lineLimit(1...4)
-                .textFieldStyle(.plain)
-                .focused($inputFocused)
-                .onSubmit {
-                    Task { await vm.send() }
-                }
-                .submitLabel(.send)
-                .padding(.vertical, 9)
-                .padding(.leading, 12)
-
-            // Send / loading indicator
-            ZStack {
-                if vm.isThinking {
-                    ProgressView()
-                        .controlSize(.mini)
-                        .tint(.white.opacity(0.3))
-                } else {
-                    Button {
-                        Task { await vm.send() }
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(
-                                vm.inputText.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? Color.white.opacity(0.12)
-                                    : Color.white.opacity(0.7)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(vm.inputText.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .frame(width: 36, height: 36)
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        withAnimation(.easeOut(duration: 0.15)) {
+            proxy.scrollTo("bottom", anchor: .bottom)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(
-                            inputFocused
-                                ? Color.white.opacity(0.2)
-                                : Color.white.opacity(0.08),
-                            lineWidth: 1
-                        )
-                )
-        )
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
-        .animation(.easeInOut(duration: 0.15), value: inputFocused)
     }
 }
 
@@ -139,77 +82,206 @@ struct ChatView: View {
 private struct MessageBubble: View {
     let message: ChatMessage
 
+    // iMessage-style corner radii
+    private let bigR: CGFloat   = 18
+    private let smallR: CGFloat = 4
+
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            if message.role == .user { Spacer(minLength: 40) }
+        HStack(alignment: .bottom, spacing: 6) {
+            if message.role == .user { Spacer(minLength: 48) }
 
-            Text(message.content)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(textColor)
-                .textSelection(.enabled)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(bubbleBackground)
-                .frame(
-                    maxWidth: .infinity,
-                    alignment: message.role == .user ? .trailing : .leading
+            Group {
+                if let attr = try? AttributedString(markdown: message.content, options: .init(interpretedSyntax: .full)) {
+                    Text(attr)
+                } else {
+                    Text(message.content)
+                }
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(textColor)
+            .textSelection(.enabled)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(bubble)
+            .fixedSize(horizontal: false, vertical: true)
+
+            if message.role != .user { Spacer(minLength: 48) }
+        }
+        .padding(.vertical, 2)
+    }
+
+    // MARK: Bubble shape (iMessage asymmetric corners)
+    @ViewBuilder
+    private var bubble: some View {
+        switch message.role {
+        case .user:
+            // Blue-tinted right bubble
+            RoundedCornerShape(
+                topLeft: bigR, topRight: bigR,
+                bottomLeft: bigR, bottomRight: smallR
+            )
+            .fill(Color(red: 0.18, green: 0.48, blue: 0.95).opacity(0.85))
+
+        case .assistant:
+            // Dark grey left bubble
+            RoundedCornerShape(
+                topLeft: bigR, topRight: bigR,
+                bottomLeft: smallR, bottomRight: bigR
+            )
+            .fill(Color.white.opacity(0.1))
+
+        case .error:
+            RoundedCornerShape(
+                topLeft: bigR, topRight: bigR,
+                bottomLeft: smallR, bottomRight: bigR
+            )
+            .fill(Color.orange.opacity(0.15))
+            .overlay(
+                RoundedCornerShape(
+                    topLeft: bigR, topRight: bigR,
+                    bottomLeft: smallR, bottomRight: bigR
                 )
-
-            if message.role != .user { Spacer(minLength: 40) }
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+            )
         }
     }
 
     private var textColor: Color {
         switch message.role {
-        case .user:      return .white.opacity(0.9)
-        case .assistant: return .white.opacity(0.75)
-        case .error:     return .orange.opacity(0.8)
-        }
-    }
-
-    private var bubbleBackground: some View {
-        Group {
-            switch message.role {
-            case .user:
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.1))
-            case .assistant:
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.clear)
-            case .error:
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.orange.opacity(0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
-                    )
-            }
+        case .user:      return .white
+        case .assistant: return .white.opacity(0.85)
+        case .error:     return .orange
         }
     }
 }
 
-// MARK: - Thinking Indicator
+// MARK: - Thinking Row
 
-private struct ThinkingIndicator: View {
-    @State private var phase = 0
+private struct ThinkingRow: View {
+    @State private var dotOpacity: [Double] = [0.2, 0.2, 0.2]
+    private let timer = Timer.publish(every: 0.35, on: .main, in: .common).autoconnect()
+    @State private var step = 0
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(Color.white.opacity(0.3))
-                    .frame(width: 5, height: 5)
-                    .scaleEffect(phase == i ? 1.3 : 0.8)
-                    .animation(
-                        .easeInOut(duration: 0.45)
-                            .repeatForever()
-                            .delay(Double(i) * 0.15),
-                        value: phase
-                    )
+        HStack(alignment: .bottom, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { i in
+                    Circle()
+                        .fill(Color.white.opacity(dotOpacity[i]))
+                        .frame(width: 6, height: 6)
+                }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedCornerShape(topLeft: 18, topRight: 18, bottomLeft: 4, bottomRight: 18)
+                    .fill(Color.white.opacity(0.08))
+            )
+            Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .onAppear { phase = 0 }
+        .padding(.vertical, 2)
+        .padding(.horizontal, 10)
+        .onReceive(timer) { _ in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dotOpacity = [0.2, 0.2, 0.2]
+                dotOpacity[step % 3] = 0.9
+            }
+            step += 1
+        }
+    }
+}
+
+// MARK: - Input Bar
+
+private struct InputBar: View {
+    @Bindable var vm: ChatViewModel
+    var focused: FocusState<Bool>.Binding
+
+    var body: some View {
+        HStack(spacing: 0) {
+            TextField("Message", text: $vm.inputText, axis: .vertical)
+                .font(.system(size: 13))
+                .foregroundStyle(.white)
+                .tint(Color(red: 0.18, green: 0.48, blue: 0.95))
+                .lineLimit(1...4)
+                .textFieldStyle(.plain)
+                .focused(focused)
+                .onSubmit {
+                    Task { await vm.send() }
+                }
+                .padding(.vertical, 9)
+                .padding(.leading, 14)
+
+            // Send button or spinner
+            ZStack {
+                if vm.isStreaming {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .tint(.white.opacity(0.35))
+                } else {
+                    let hasText = !vm.inputText.trimmingCharacters(in: .whitespaces).isEmpty
+                    Button {
+                        Task { await vm.send() }
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(
+                                hasText
+                                    ? Color(red: 0.18, green: 0.48, blue: 0.95)
+                                    : Color.white.opacity(0.1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!hasText)
+                }
+            }
+            .frame(width: 38, height: 38)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.07))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(
+                            focused.wrappedValue
+                                ? Color.white.opacity(0.18)
+                                : Color.white.opacity(0.07),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .padding(.horizontal, 10)
+        .padding(.bottom, 10)
+        .animation(.easeInOut(duration: 0.15), value: focused.wrappedValue)
+    }
+}
+
+// MARK: - Asymmetric Rounded Corner Shape (iMessage style)
+
+private struct RoundedCornerShape: Shape {
+    var topLeft: CGFloat
+    var topRight: CGFloat
+    var bottomLeft: CGFloat
+    var bottomRight: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width, h = rect.height
+        let tl = min(topLeft,    w/2, h/2)
+        let tr = min(topRight,   w/2, h/2)
+        let bl = min(bottomLeft, w/2, h/2)
+        let br = min(bottomRight,w/2, h/2)
+
+        path.move(to: CGPoint(x: tl, y: 0))
+        path.addLine(to: CGPoint(x: w - tr, y: 0))
+        path.addArc(center: CGPoint(x: w - tr, y: tr),    radius: tr, startAngle: .degrees(-90), endAngle: .degrees(0),   clockwise: false)
+        path.addLine(to: CGPoint(x: w, y: h - br))
+        path.addArc(center: CGPoint(x: w - br, y: h - br),radius: br, startAngle: .degrees(0),   endAngle: .degrees(90),  clockwise: false)
+        path.addLine(to: CGPoint(x: bl, y: h))
+        path.addArc(center: CGPoint(x: bl, y: h - bl),    radius: bl, startAngle: .degrees(90),  endAngle: .degrees(180), clockwise: false)
+        path.addLine(to: CGPoint(x: 0, y: tl))
+        path.addArc(center: CGPoint(x: tl, y: tl),        radius: tl, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+        path.closeSubpath()
+        return path
     }
 }

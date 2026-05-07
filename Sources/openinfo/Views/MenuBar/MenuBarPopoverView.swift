@@ -53,10 +53,7 @@ struct MenuBarPopoverView: View {
                         onNext: vm.hasMultipleGames ? { vm.nextGame() } : nil
                     )
                     .padding(10)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .trailing)),
-                        removal:   .opacity.combined(with: .move(edge: .leading))
-                    ))
+                    .transition(.opacity)
                     .id(game.id)
                 } else if vm.isLoading {
                     loadingPlaceholder
