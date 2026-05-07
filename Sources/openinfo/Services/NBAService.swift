@@ -21,5 +21,24 @@ actor SportsService {
 // MARK: - Refresh Interval
 
 func refreshInterval(for games: [NBAGame]) -> TimeInterval {
-    games.contains(where: { $0.isLive }) ? 15 : 300
+    for game in games {
+        guard case .inProgress(_, let clock) = game.status else { continue }
+        // Last 3 minutes of any quarter → 2s
+        if let seconds = parseClock(clock), seconds <= 180 {
+            return 2
+        }
+        return 6
+    }
+    // All games are final or scheduled → 30s
+    return 30
+}
+
+/// Parse "M:SS" or "MM:SS" countdown clock into total seconds.
+private func parseClock(_ clock: String) -> Int? {
+    let parts = clock.split(separator: ":")
+    guard parts.count == 2,
+          let minutes = Int(parts[0]),
+          let seconds = Int(parts[1])
+    else { return nil }
+    return minutes * 60 + seconds
 }

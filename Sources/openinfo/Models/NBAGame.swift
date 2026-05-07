@@ -81,22 +81,30 @@ extension NBAGame {
             id: event.id,
             homeTeam: TeamInfo(
                 displayName: homeComp.team.displayName,
-                abbreviation: homeComp.team.abbreviation,
+                abbreviation: abbreviation(for: homeComp.team),
                 logoURL: homeComp.team.logo,
-                hexColor: homeComp.team.color,
+                hexColor: homeComp.team.color.isEmpty ? "888888" : homeComp.team.color,
                 score: Int(homeComp.score) ?? 0,
                 isHome: true
             ),
             awayTeam: TeamInfo(
                 displayName: awayComp.team.displayName,
-                abbreviation: awayComp.team.abbreviation,
+                abbreviation: abbreviation(for: awayComp.team),
                 logoURL: awayComp.team.logo,
-                hexColor: awayComp.team.color,
+                hexColor: awayComp.team.color.isEmpty ? "888888" : awayComp.team.color,
                 score: Int(awayComp.score) ?? 0,
                 isHome: false
             ),
             status: gameStatus,
             shortDetail: statusType.shortDetail
         )
+    }
+
+    private static func abbreviation(for team: ESPNTeam) -> String {
+        let abbr = team.abbreviation.trimmingCharacters(in: .whitespaces)
+        if !abbr.isEmpty { return abbr }
+        // Fallback: first 3 letters of last word in display name
+        let last = team.displayName.components(separatedBy: " ").last ?? team.displayName
+        return String(last.prefix(3)).uppercased()
     }
 }
