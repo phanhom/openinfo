@@ -30,3 +30,7 @@ Thumbs.db
 
 # Claude
 .claude/
+
+# Build artifacts
+*.app/
+*.app.zip

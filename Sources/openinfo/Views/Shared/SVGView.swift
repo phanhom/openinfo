@@ -25,9 +25,11 @@ struct SVGView: View {
     }
 
     private func load() {
-        guard
-            let url = Bundle.module.url(forResource: name, withExtension: "svg")
-        else { return }
+        // When running via `swift run`, SPM uses Bundle.module.
+        // When installed as a standalone .app, fall back to Bundle.main.
+        let url = Bundle.module.url(forResource: name, withExtension: "svg")
+            ?? Bundle.main.url(forResource: name, withExtension: "svg")
+        guard let url else { return }
 
         let img = NSImage(contentsOf: url)
         img?.size = NSSize(width: size * 2, height: size * 2)

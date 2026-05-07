@@ -49,6 +49,40 @@ A minimal macOS menu bar + floating desktop widget that shows NBA live scores �
 
 ## Getting started
 
+### 🚀 One-line install (macOS 15+)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phanhom/openinfo/main/install.sh | bash
+```
+
+With AI chat configured:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phanhom/openinfo/main/install.sh | bash -s -- \
+  --ai-url https://api.deepseek.com/v1 \
+  --ai-key sk-your-key \
+  --ai-model deepseek-chat
+```
+
+Or with a local model:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phanhom/openinfo/main/install.sh | bash -s -- \
+  --ai-url http://localhost:11434/v1 \
+  --ai-key ollama \
+  --ai-model llama3
+```
+
+### 📦 Build from source
+
+```bash
+git clone https://github.com/phanhom/openinfo.git
+cd openinfo
+make install   # builds + copies to /Applications
+```
+
+To just build and run for testing:
+
 ```bash
 git clone https://github.com/phanhom/openinfo.git
 cd openinfo
@@ -57,6 +91,22 @@ swift run
 ```
 
 The app lives in the menu bar — no Dock icon. The floating window appears in the top-right corner of your screen.
+
+---
+
+## AI configuration
+
+OpenInfo has a built-in AI assistant that can answer questions about live games, players, and stats. It supports any OpenAI-compatible API (OpenAI, DeepSeek, Together, Groq, Ollama, etc.) or Anthropic.
+
+Set up your AI config in `~/.openinfo.env`:
+
+```bash
+AI_BASE_URL=https://api.openai.com/v1
+AI_API_KEY=sk-...
+AI_MODEL_NAME=gpt-4o
+```
+
+Or pass them during install (see above). Without a `.env` file, the app still works — AI chat just won't be available.
 
 ---
 
@@ -94,8 +144,9 @@ Sources/openinfo/
 
 | State | Interval |
 |---|---|
-| Game in progress | every 15 seconds |
-| No live games | every 5 minutes |
+| Game in progress | every 6 seconds |
+| Last 3 minutes of any quarter | every 2 seconds |
+| No live games / all final | every 30 seconds |
 
 ---
 

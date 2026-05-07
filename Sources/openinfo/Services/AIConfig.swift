@@ -56,7 +56,7 @@ struct AIConfig {
                 .deletingLastPathComponent()
                 .appendingPathComponent(".env"),
             URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Desktop/MASS/TheHive/openinfo/.env"),
+                .appendingPathComponent(".openinfo.env"),
             Bundle.main.bundleURL
                 .appendingPathComponent(".env"),
         ].compactMap { $0 }
