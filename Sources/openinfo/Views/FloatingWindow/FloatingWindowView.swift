@@ -70,7 +70,7 @@ struct FloatingWindowView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 8)
             }
-            .frame(minHeight: 200, maxHeight: 480)
+            .frame(minHeight: 200, idealHeight: 360, maxHeight: 480)
             .overlay {
                 if vm.games.isEmpty && !vm.isLoading {
                     emptyState
@@ -81,11 +81,11 @@ struct FloatingWindowView: View {
             if showChat {
                 divider
                 ChatView(vm: chatVM)
-                    .frame(minHeight: 200, maxHeight: 280)
+                    .frame(minHeight: 200, idealHeight: 220, maxHeight: 280)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
-        .frame(width: 324)
+        .frame(width: 324, height: showChat ? 600 : 360)
         .background(windowBackground)
         .animation(.easeInOut(duration: 0.2), value: showChat)
     }
