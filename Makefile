@@ -36,6 +36,8 @@ bundle: build
 	/usr/libexec/PlistBuddy -c "Add CFBundleInfoDictionaryVersion string 6.0" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add LSMinimumSystemVersion        string 15.0" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add LSUIElement                   bool YES" "$(APP_BUNDLE)/Contents/Info.plist"
+	/usr/libexec/PlistBuddy -c "Add NSSpeechRecognitionUsageDescription string OpenInfo uses speech recognition to dictate text into the AI chat input field" "$(APP_BUNDLE)/Contents/Info.plist"
+	/usr/libexec/PlistBuddy -c "Add NSMicrophoneUsageDescription      string OpenInfo needs microphone access for voice dictation in the AI chat" "$(APP_BUNDLE)/Contents/Info.plist"
 
 # ── 3. Ad-hoc code sign ─────────────────────────────────────────────────────
 sign: bundle

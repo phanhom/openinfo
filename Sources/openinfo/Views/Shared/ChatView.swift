@@ -67,13 +67,16 @@ struct ChatView: View {
             // ── Input bar ─────────────────────────────────────────────────
             InputBar(vm: vm, focused: $inputFocused)
         }
-        .onAppear { inputFocused = true }
+        .onAppear {
+            // Delay focus slightly so the animation completes first
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                inputFocused = true
+            }
+        }
     }
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
-        withAnimation(.easeOut(duration: 0.15)) {
-            proxy.scrollTo("bottom", anchor: .bottom)
-        }
+        proxy.scrollTo("bottom", anchor: .bottom)
     }
 }
 
@@ -91,10 +94,10 @@ private struct MessageBubble: View {
             if message.role == .user { Spacer(minLength: 48) }
 
             Group {
-                if let attr = try? AttributedString(markdown: message.content, options: .init(interpretedSyntax: .full)) {
+                if message.role != .error, let attr = try? AttributedString(markdown: message.content.isEmpty ? " " : message.content, options: .init(interpretedSyntax: .full)) {
                     Text(attr)
                 } else {
-                    Text(message.content)
+                    Text(message.content.isEmpty ? " " : message.content)
                 }
             }
             .font(.system(size: 13))
@@ -199,48 +202,174 @@ private struct ThinkingRow: View {
     }
 }
 
+// MARK: - Dictation Helper — uses Apple Speech framework for on-device recognition
+
+import Speech
+
+@Observable
+@MainActor
+final class DictationHelper {
+    private var audioEngine: AVAudioEngine?
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var task: SFSpeechRecognitionTask?
+    private(set) var isListening = false
+    private(set) var partialResult = ""
+
+    var onFinalResult: ((String) -> Void)?
+
+    func start() {
+        guard !isListening else { return }
+        guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
+            requestAuthorization()
+            return
+        }
+
+        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: Locale.current.language.languageCode?.identifier ?? "zh_CN"))
+        guard recognizer != nil, recognizer!.isAvailable else { return }
+
+        audioEngine = AVAudioEngine()
+        request = SFSpeechAudioBufferRecognitionRequest()
+
+        guard let request, let audioEngine else { return }
+        request.shouldReportPartialResults = true
+
+        let node = audioEngine.inputNode
+        let format = node.outputFormat(forBus: 0)
+        node.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            request.append(buffer)
+        }
+
+        audioEngine.prepare()
+        do { try audioEngine.start() } catch { return }
+
+        isListening = true
+        partialResult = ""
+
+        task = recognizer?.recognitionTask(with: request) { [weak self] result, error in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let result {
+                    self.partialResult = result.bestTranscription.formattedString
+                    if result.isFinal {
+                        self.finish(self.partialResult)
+                    }
+                }
+                if error != nil {
+                    self.finish(self.partialResult)
+                }
+            }
+        }
+    }
+
+    func stop() {
+        guard isListening else { return }
+        audioEngine?.stop()
+        audioEngine?.inputNode.removeTap(onBus: 0)
+        request?.endAudio()
+        task?.cancel()
+        isListening = false
+        if !partialResult.isEmpty {
+            finish(partialResult)
+        }
+    }
+
+    private func finish(_ text: String) {
+        isListening = false
+        audioEngine?.stop()
+        audioEngine?.inputNode.removeTap(onBus: 0)
+        request?.endAudio()
+        task?.cancel()
+        audioEngine = nil
+        request = nil
+        task = nil
+        if !text.isEmpty {
+            onFinalResult?(text)
+        }
+        partialResult = ""
+    }
+
+    func requestAuthorization() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            if status == .authorized {
+                Task { @MainActor in self.start() }
+            }
+        }
+    }
+}
+
 // MARK: - Input Bar
 
 private struct InputBar: View {
     @Bindable var vm: ChatViewModel
     var focused: FocusState<Bool>.Binding
+    @State private var dictation = DictationHelper()
 
     var body: some View {
         HStack(spacing: 0) {
+            // Dictation button — uses Apple Speech framework (on-device)
+            Button {
+                if dictation.isListening {
+                    dictation.stop()
+                } else {
+                    dictation.onFinalResult = { text in
+                        // Append dictation result to existing input
+                        if vm.inputText.isEmpty {
+                            vm.inputText = text
+                        } else {
+                            vm.inputText += " " + text
+                        }
+                    }
+                    dictation.start()
+                }
+            } label: {
+                Image(systemName: dictation.isListening ? "mic.fill" : "mic")
+                    .font(.system(size: 14))
+                    .foregroundStyle(
+                        dictation.isListening
+                            ? Color(red: 0.30, green: 0.85, blue: 0.45)
+                            : Color.white.opacity(0.35)
+                    )
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 4)
+
             TextField("Message", text: $vm.inputText, axis: .vertical)
                 .font(.system(size: 13))
                 .foregroundStyle(.white)
                 .tint(Color(red: 0.18, green: 0.48, blue: 0.95))
-                .lineLimit(1...4)
+                .lineLimit(1...5)
                 .textFieldStyle(.plain)
                 .focused(focused)
                 .onSubmit {
                     Task { await vm.send() }
                 }
+                .onChange(of: vm.inputText) { _, newValue in
+                    // Silent 2000-char limit — truncate without hint
+                    if newValue.count > 2000 {
+                        vm.inputText = String(newValue.prefix(2000))
+                    }
+                }
                 .padding(.vertical, 9)
-                .padding(.leading, 14)
+                .padding(.leading, 6)
 
-            // Send button or spinner
+            // Send button — always blue, disabled when empty
             ZStack {
                 if vm.isStreaming {
                     ProgressView()
                         .controlSize(.mini)
-                        .tint(.white.opacity(0.35))
+                        .tint(Color(red: 0.18, green: 0.48, blue: 0.95))
                 } else {
-                    let hasText = !vm.inputText.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
                         Task { await vm.send() }
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 20))
-                            .foregroundStyle(
-                                hasText
-                                    ? Color(red: 0.18, green: 0.48, blue: 0.95)
-                                    : Color.white.opacity(0.1)
-                            )
+                            .foregroundStyle(Color(red: 0.18, green: 0.48, blue: 0.95))
                     }
                     .buttonStyle(.plain)
-                    .disabled(!hasText)
+                    .disabled(vm.inputText.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .frame(width: 38, height: 38)
