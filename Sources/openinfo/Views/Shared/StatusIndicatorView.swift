@@ -36,7 +36,7 @@ struct StatusIndicatorView: View {
 
     private var dotColor: Color {
         switch status {
-        case .inProgress:  return .green
+        case .inProgress:  return Color(red: 0.30, green: 0.85, blue: 0.45)
         case .final_:      return Color(white: 0.45)
         case .scheduled:   return .white.opacity(0.55)
         }
@@ -44,7 +44,7 @@ struct StatusIndicatorView: View {
 
     private var textColor: Color {
         switch status {
-        case .inProgress:  return .green
+        case .inProgress:  return Color(red: 0.30, green: 0.85, blue: 0.45)
         case .final_:      return Color(white: 0.45)
         case .scheduled:   return .white.opacity(0.65)
         }
