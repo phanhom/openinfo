@@ -159,8 +159,8 @@ private struct MessageBubble: View {
 
 private struct ThinkingRow: View {
     @State private var dotOpacity: [Double] = [0.2, 0.2, 0.2]
-    private let timer = Timer.publish(every: 0.35, on: .main, in: .common).autoconnect()
     @State private var step = 0
+    @State private var timer: Timer?
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 6) {
@@ -181,12 +181,20 @@ private struct ThinkingRow: View {
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 10)
-        .onReceive(timer) { _ in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                dotOpacity = [0.2, 0.2, 0.2]
-                dotOpacity[step % 3] = 0.9
+        .onAppear {
+            timer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: true) { _ in
+                Task { @MainActor in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        dotOpacity = [0.2, 0.2, 0.2]
+                        dotOpacity[step % 3] = 0.9
+                    }
+                    step += 1
+                }
             }
-            step += 1
+        }
+        .onDisappear {
+            timer?.invalidate()
+            timer = nil
         }
     }
 }

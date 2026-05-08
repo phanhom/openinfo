@@ -34,4 +34,13 @@ struct OpeninfoApp: App {
         .windowResizability(.contentSize)
         .defaultPosition(.topTrailing)
     }
+
+    // Start polling immediately when the app launches
+    init() {
+        let vm = GamesViewModel()
+        self._vm = State(initialValue: vm)
+        Task { @MainActor in
+            vm.startPolling()
+        }
+    }
 }

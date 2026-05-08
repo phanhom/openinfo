@@ -89,9 +89,6 @@ struct MenuBarPopoverView: View {
         }
         .frame(width: 296)
         .background(Color.black)
-        .onAppear {
-            Task { await vm.refresh() }
-        }
     }
 
     // MARK: - Helpers

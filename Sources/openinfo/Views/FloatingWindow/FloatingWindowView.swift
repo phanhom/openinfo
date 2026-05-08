@@ -52,23 +52,25 @@ struct FloatingWindowView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
 
             // ── Divider ───────────────────────────────────────────────────
             divider
 
             // ── Games List ────────────────────────────────────────────────
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: 6) {
                     ForEach(vm.games) { game in
                         FloatingGameCard(game: game)
                     }
                 }
-                .padding(12)
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
             }
-            .frame(maxHeight: 360)
+            .frame(minHeight: 200, maxHeight: 480)
             .overlay {
                 if vm.games.isEmpty && !vm.isLoading {
                     emptyState
@@ -79,14 +81,13 @@ struct FloatingWindowView: View {
             if showChat {
                 divider
                 ChatView(vm: chatVM)
+                    .frame(minHeight: 200, maxHeight: 280)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
         .frame(width: 324)
         .background(windowBackground)
         .animation(.easeInOut(duration: 0.2), value: showChat)
-        .onAppear { vm.startPolling() }
-        .onDisappear { vm.stopPolling() }
     }
 
     // MARK: - Background
@@ -115,6 +116,6 @@ struct FloatingWindowView: View {
                 .foregroundStyle(.white.opacity(0.25))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 48)
+        .padding(.vertical, 40)
     }
 }

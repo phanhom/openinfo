@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.isMovableByWindowBackground = true
 
         // Transparent window chrome
-        window.hasShadow = true
+        window.hasShadow = false
         window.titlebarAppearsTransparent = true
         window.backgroundColor = .clear
         window.isOpaque = false
