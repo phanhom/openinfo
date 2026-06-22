@@ -14,7 +14,7 @@ struct TeamInfo: Identifiable, Equatable {
     var id: String { abbreviation }
     let displayName: String
     let abbreviation: String
-    let logoURL: URL
+    let logoURL: URL?
     let hexColor: String   // "1d428a"
     let score: Int
     let isHome: Bool
@@ -24,10 +24,14 @@ struct TeamInfo: Identifiable, Equatable {
 
 struct NBAGame: Identifiable, Equatable {
     let id: String
+    let league: League
     let homeTeam: TeamInfo
     let awayTeam: TeamInfo
     let status: GameStatus
     let shortDetail: String
+    let eventName: String?
+    let bestOf: String?
+    let mapName: String?
 
     // MARK: Computed
 
@@ -44,8 +48,12 @@ struct NBAGame: Identifiable, Equatable {
     var menuBarLabel: String {
         switch status {
         case .scheduled(let time):
-            return "\(awayTeam.abbreviation) vs \(homeTeam.abbreviation) · \(time)"
+            let meta = league == .cs2 ? (bestOf ?? shortDetail) : time
+            return "\(awayTeam.abbreviation) vs \(homeTeam.abbreviation) · \(meta)"
         case .inProgress, .final_:
+            if league == .cs2 {
+                return "\(awayTeam.abbreviation) vs \(homeTeam.abbreviation) · \(shortDetail)"
+            }
             return "\(awayTeam.abbreviation) \(awayTeam.score)  \(homeTeam.abbreviation) \(homeTeam.score) · \(shortDetail)"
         }
     }
@@ -54,7 +62,7 @@ struct NBAGame: Identifiable, Equatable {
 // MARK: - Mapper
 
 extension NBAGame {
-    static func from(event: ESPNEvent) -> NBAGame? {
+    static func from(event: ESPNEvent, league: League = .nba) -> NBAGame? {
         guard let comp = event.competitions.first else { return nil }
         guard comp.competitors.count >= 2 else { return nil }
 
@@ -79,6 +87,7 @@ extension NBAGame {
 
         return NBAGame(
             id: event.id,
+            league: league,
             homeTeam: TeamInfo(
                 displayName: homeComp.team.displayName,
                 abbreviation: abbreviation(for: homeComp.team),
@@ -96,7 +105,10 @@ extension NBAGame {
                 isHome: false
             ),
             status: gameStatus,
-            shortDetail: statusType.shortDetail
+            shortDetail: statusType.shortDetail,
+            eventName: nil,
+            bestOf: nil,
+            mapName: nil
         )
     }
 
