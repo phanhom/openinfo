@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TeamLogoView: View {
-    let url: URL
+    let url: URL?
     let size: CGFloat
 
     @State private var cachedImage: Image? = nil
@@ -17,7 +17,7 @@ struct TeamLogoView: View {
                     .shadow(color: .white.opacity(0.08), radius: 4)
 
             } else if failed {
-                Image(systemName: "basketball.fill")
+                Image(systemName: url == nil ? "scope" : "basketball.fill")
                     .resizable()
                     .scaledToFit()
                     .foregroundStyle(.white.opacity(0.3))
@@ -31,6 +31,10 @@ struct TeamLogoView: View {
         }
         .frame(width: size, height: size)
         .task(id: url) {
+            guard let url else {
+                failed = true
+                return
+            }
             if let image = await ImageCache.shared.load(url: url) {
                 cachedImage = image
             } else {

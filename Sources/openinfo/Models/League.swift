@@ -5,6 +5,7 @@ import Foundation
 enum League: String, CaseIterable, Identifiable {
     case nba = "NBA"
     case nfl = "NFL"
+    case cs2 = "CS2"
 
     var id: String { rawValue }
 
@@ -12,6 +13,14 @@ enum League: String, CaseIterable, Identifiable {
         switch self {
         case .nba: return "basketball/nba"
         case .nfl: return "football/nfl"
+        case .cs2: return ""
+        }
+    }
+
+    var usesESPN: Bool {
+        switch self {
+        case .nba, .nfl: return true
+        case .cs2: return false
         }
     }
 
@@ -19,6 +28,7 @@ enum League: String, CaseIterable, Identifiable {
         switch self {
         case .nba: return "basketball.fill"
         case .nfl: return "football.fill"
+        case .cs2: return "scope"
         }
     }
 

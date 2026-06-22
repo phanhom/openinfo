@@ -13,6 +13,11 @@ let package = Package(
             resources: [
                 .process("Resources")
             ]
+        ),
+        .testTarget(
+            name: "openinfoTests",
+            dependencies: ["openinfo"],
+            path: "Tests/openinfoTests"
         )
     ]
 )
